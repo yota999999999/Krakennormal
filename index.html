@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Spin Smooth Side</title>
+
+<style>
+body{
+    margin:0;
+    font-family:Arial,sans-serif;
+    background:transparent;
+    text-align:center;
+}
+
+.container{
+    width:220px;
+    margin:20px auto;
+}
+
+.spin-box{
+    background:rgba(0,0,0,.6);
+    border-radius:14px;
+    padding:14px;
+}
+
+.slot{
+    width:90px;
+    height:90px;
+    margin:auto;
+    border-radius:12px;
+    background:#111;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    box-shadow:0 0 18px gold;
+    overflow:hidden;
+}
+
+.slot img{
+    width:50px;
+    height:50px;
+    transition:transform .07s linear;
+}
+
+.spin-btn{
+    width:55px;
+    height:55px;
+    border-radius:50%;
+    border:2px solid white;
+    background:rgba(255,255,255,.15);
+    margin-top:12px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+    <div class="spin-box">
+        <div class="slot">
+            <img src="zonk.png" id="spinImg">
+        </div>
+    </div>
+
+    <button class="spin-btn" onclick="spin()"></button>
+</div>
+
+<!-- AUDIO -->
+<audio id="spinSound" src="spin.mp3"></audio>
+<audio id="zonkAudio" src="zonk1.mp3"></audio>
+<audio id="sctbAudio" src="sctb1.mp3"></audio>
+<audio id="labalabaAudio" src="labalaba1.mp3"></audio>
+<audio id="mitosAudio" src="mitos1.mp3"></audio>
+<audio id="krakenAudio" src="kraken.mp3"></audio>
+
+<script>
+const prizes={
+    A:{img:"zonk.png",audio:"zonkAudio"},
+    SC:{img:"sc_tb.png",audio:"sctbAudio"},
+    MT:{img:"mitos.png",audio:"mitosAudio"},
+    LB:{img:"laba_laba.png",audio:"labalabaAudio"},
+    K:{img:"kraken.png",audio:"krakenAudio"}
+};
+
+/* PERSENTASE ASLI */
+const winPool=[
+    {id:"K",w:1},
+    {id:"SC",w:4},
+    {id:"MT",w:170},
+    {id:"LB",w:0},
+    {id:"A",w:825}
+];
+
+/* SIMPAN STATUS */
+let spinCount = Number(localStorage.getItem("spinCount")) || 0;
+let krakenGiven = localStorage.getItem("krakenGiven")==="true";
+
+function saveState(){
+    localStorage.setItem("spinCount",spinCount);
+    localStorage.setItem("krakenGiven",krakenGiven);
+}
+
+function pickResult(){
+    spinCount++;
+
+    /* PASTI KRAKEN DI SPIN 30 (SEKALI SEUMUR HIDUP) */
+    if(spinCount === 30 && !krakenGiven){
+        krakenGiven = true;
+        saveState();
+        return "K";
+    }
+
+    /* SETELAH ITU KRAKEN 0% */
+    let pool=[];
+    winPool.forEach(h=>{
+        if(krakenGiven && h.id==="K") return;
+        for(let i=0;i<h.w;i++) pool.push(h.id);
+    });
+
+    saveState();
+    return pool[Math.floor(Math.random()*pool.length)];
+}
+
+function spin(){
+    const img=document.getElementById("spinImg");
+    const spinSound=document.getElementById("spinSound");
+
+    spinSound.loop=true;
+    spinSound.currentTime=0;
+    spinSound.play().catch(()=>{});
+
+    const keys=Object.keys(prizes);
+    const start=Date.now();
+    const duration=2500; // 🔥 2,5 DETIK
+
+    function animate(){
+        const now=Date.now();
+        const progress=(now-start)/duration;
+
+        const offset=Math.sin(now/55)*(22*(1-progress));
+        img.style.transform=`translateX(${offset}px)`;
+        img.src=prizes[keys[Math.floor(Math.random()*keys.length)]].img;
+
+        if(progress<1){
+            requestAnimationFrame(animate);
+        }else{
+            finish();
+        }
+    }
+
+    animate();
+
+    function finish(){
+        spinSound.pause();
+        spinSound.currentTime=0;
+        img.style.transform="translateX(0)";
+
+        const win=pickResult();
+        img.src=prizes[win].img;
+        document.getElementById(prizes[win].audio).play().catch(()=>{});
+    }
+}
+</script>
+
+</body>
+</html>
